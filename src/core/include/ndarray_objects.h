@@ -17,4 +17,13 @@ typedef struct _PyArrayObject {
     PyArray_Descr *desc;
 } PyArrayObject;
 
+static PyTypeObject PyArrayObjectType = {
+    .ob_base = PyVarObject_HEAD_INIT(NULL, 0).tp_name = "numpy_like.ndarray",
+    .tp_itemsize = 0,
+    .tp_basicsize = sizeof(PyArrayObject),
+    .tp_flags = Py_TPFLAGS_DEFAULT,
+    .tp_doc = PyDoc_STR("ndarray objects"),
+    .tp_new = PyType_GenericNew,
+};
+
 #endif
