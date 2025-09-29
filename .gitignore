@@ -1,0 +1,14 @@
+build
+build/*/**
+
+.cache
+.cache/*/**
+
+np-like
+np-like/*/**
+
+venv
+venv/*/**
+
+build
+build/*

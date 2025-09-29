@@ -1,0 +1,15 @@
+[build-system]
+build-backend = 'mesonpy'
+requires = ['meson-python']
+
+[project]
+name = 'numpy-like'
+version = '0.0.1'
+description = 'A Numpy clone written in C'
+readme = 'README.md'
+requires-python = '>=3.12'
+license = {file = 'LICENSE.txt'}
+authors = [
+    {name = 'Hy Le', email = 'letuanhy1507@gmail.com'},
+]
+
