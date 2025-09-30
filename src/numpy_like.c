@@ -1,5 +1,5 @@
 #include <Python.h>
-#include <ndarray_objects.h>
+#include <ndarray_types.h>
 
 static int numpy_like_module_exec(PyObject *m) {
     if (PyType_Ready(&(PyArrayObjectType)) < 0) {
