@@ -1,6 +1,5 @@
 #include <Python.h>
 #include <ndarray_types.h>
-#include <stdio.h>
 
 static int PyArrayObject_init(PyArrayObject *self, PyObject *args,
                               PyObject *kwds) {
@@ -29,17 +28,40 @@ static int PyArrayObject_init(PyArrayObject *self, PyObject *args,
             ptr[i] = 0.0;
         } else {
             ptr[i] = PyFloat_AsDouble(item);
-            printf("initialized with: %f ", ptr[i]);
         }
     }
-
-    printf("\n");
 
     free(self->data);
     self->data = (char *)ptr;
 
+    free(self->nd);
+    self->nd = (int *)malloc(sizeof(int));
+    *(self->nd) = 1;
+
+    free(self->dimensions);
+    self->dimensions = (int *)malloc(sizeof(int));
+    *(self->dimensions) = array_length;
+
+    free(self->strides);
+    self->strides = (int *)malloc(sizeof(int));
+    *(self->dimensions) = 1;
+
     return 0;
 }
+
+static PyObject *PyArrayObject_display(PyArrayObject *self,
+                                       PyObject *Py_UNUSED(ignored)) {
+    double x = ((double *)self->data)[0];
+
+    printf("x is: %f\n", x);
+
+    Py_RETURN_NONE;
+}
+
+static PyMethodDef PyArrayObject_methods[] = {
+    {"display", (PyCFunction)PyArrayObject_display, METH_NOARGS,
+     "Display the array stored in the raw data pointer"},
+    {NULL}};
 
 PyTypeObject PyArrayObjectType = {
     .ob_base = PyVarObject_HEAD_INIT(NULL, 0).tp_name = "numpy_like.ndarray",
@@ -49,4 +71,5 @@ PyTypeObject PyArrayObjectType = {
     .tp_doc = PyDoc_STR("ndarray objects"),
     .tp_new = PyType_GenericNew,
     .tp_init = (initproc)PyArrayObject_init,
+    .tp_methods = PyArrayObject_methods,
 };
