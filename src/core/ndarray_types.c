@@ -44,16 +44,20 @@ static int PyArrayObject_init(PyArrayObject *self, PyObject *args,
 
     free(self->strides);
     self->strides = (int *)malloc(sizeof(int));
-    *(self->dimensions) = 1;
+    *(self->strides) = 1;
 
     return 0;
 }
 
 static PyObject *PyArrayObject_display(PyArrayObject *self,
                                        PyObject *Py_UNUSED(ignored)) {
-    double x = ((double *)self->data)[0];
+    double *x = ((double *)self->data);
+    int strides = self->strides[0];
+    int dim = self->dimensions[0];
 
-    printf("x is: %f\n", x);
+    for (int i = 0; i < dim; i += strides) {
+        printf("number is: %f\n", x[i]);
+    }
 
     Py_RETURN_NONE;
 }
