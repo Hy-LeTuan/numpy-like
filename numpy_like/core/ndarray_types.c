@@ -1,5 +1,27 @@
 #include <Python.h>
 #include <ndarray_types.h>
+#include <string.h>
+
+static void init_set_meta_data(PyArrayObject *self, const char *dtypes,
+                               int array_length) {
+    free(self->strides);
+    free(self->nd);
+    free(self->dimensions);
+
+    if (strcmp(dtypes, "float32") == 0) {
+        self->strides = malloc(sizeof(int));
+        *self->strides = 4;
+    } else if (!*dtypes || strcmp(dtypes, "float64") == 0) {
+        self->strides = malloc(sizeof(int));
+        *self->strides = 8;
+    }
+
+    self->nd = (int *)malloc(sizeof(int));
+    *(self->nd) = 1;
+
+    self->dimensions = (int *)malloc(sizeof(int));
+    *(self->dimensions) = array_length;
+}
 
 static int PyArrayObject_init(PyArrayObject *self, PyObject *args,
                               PyObject *kwds) {
@@ -7,19 +29,25 @@ static int PyArrayObject_init(PyArrayObject *self, PyObject *args,
     int array_length;
     double *ptr;
 
-    if (!PyArg_ParseTuple(args, "O", &array))
+    static char *keywords[] = {"array", "dtypes", NULL};
+    const char *dtypes = "";
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O|s", keywords, &array,
+                                     &dtypes)) {
         return -1;
+    }
 
     array_length = PyObject_Length(array);
-
-    if (array_length < 0)
+    if (array_length < 0) {
         return -1;
+    }
 
     ptr = (double *)malloc(sizeof(double) * array_length);
 
     if (ptr == NULL)
         return -1;
 
+    // populate buffer data
     for (int i = 0; i < array_length; i++) {
         PyObject *item;
         item = PyList_GetItem(array, i);
@@ -34,29 +62,27 @@ static int PyArrayObject_init(PyArrayObject *self, PyObject *args,
     free(self->data);
     self->data = (char *)ptr;
 
-    free(self->nd);
-    self->nd = (int *)malloc(sizeof(int));
-    *(self->nd) = 1;
-
-    free(self->dimensions);
-    self->dimensions = (int *)malloc(sizeof(int));
-    *(self->dimensions) = array_length;
-
-    free(self->strides);
-    self->strides = (int *)malloc(sizeof(int));
-    *(self->strides) = 1;
+    // set metadata
+    init_set_meta_data(self, dtypes, array_length);
 
     return 0;
 }
 
 static PyObject *PyArrayObject_display(PyArrayObject *self,
                                        PyObject *Py_UNUSED(ignored)) {
-    double *x = ((double *)self->data);
     int strides = self->strides[0];
     int dim = self->dimensions[0];
 
-    for (int i = 0; i < dim; i += strides) {
-        printf("number is: %f\n", x[i]);
+    for (int i = 0; i < strides * dim; i += strides) {
+        char *num = malloc(strides);
+
+        for (int j = 0; j < strides; j++) {
+            num[j] = self->data[i + j];
+        }
+
+        // only the final cast is needed
+        double *x = (double *)num;
+        printf("the number x is: %f\n", *x);
     }
 
     Py_RETURN_NONE;
