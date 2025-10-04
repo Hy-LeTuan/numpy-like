@@ -2,8 +2,9 @@
 #include <ndarray_types.h>
 #include <string.h>
 
-static void init_set_meta_data(PyArrayObject *self, const char *dtypes,
-                               int array_length) {
+static void
+init_set_meta_data(PyArrayObject *self, const char *dtypes, int array_length)
+{
     free(self->strides);
     free(self->nd);
     free(self->dimensions);
@@ -11,7 +12,8 @@ static void init_set_meta_data(PyArrayObject *self, const char *dtypes,
     if (strcmp(dtypes, "float32") == 0) {
         self->strides = malloc(sizeof(int));
         *self->strides = 4;
-    } else if (!*dtypes || strcmp(dtypes, "float64") == 0) {
+    }
+    else if (!*dtypes || strcmp(dtypes, "float64") == 0) {
         self->strides = malloc(sizeof(int));
         *self->strides = 8;
     }
@@ -23,8 +25,9 @@ static void init_set_meta_data(PyArrayObject *self, const char *dtypes,
     *(self->dimensions) = array_length;
 }
 
-static int PyArrayObject_init(PyArrayObject *self, PyObject *args,
-                              PyObject *kwds) {
+static int
+PyArrayObject_init(PyArrayObject *self, PyObject *args, PyObject *kwds)
+{
     PyObject *array;
     int array_length;
     double *ptr;
@@ -32,8 +35,7 @@ static int PyArrayObject_init(PyArrayObject *self, PyObject *args,
     static char *keywords[] = {"array", "dtypes", NULL};
     const char *dtypes = "";
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O|s", keywords, &array,
-                                     &dtypes)) {
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O|s", keywords, &array, &dtypes)) {
         return -1;
     }
 
@@ -54,7 +56,8 @@ static int PyArrayObject_init(PyArrayObject *self, PyObject *args,
 
         if (!PyFloat_Check(item)) {
             ptr[i] = 0.0;
-        } else {
+        }
+        else {
             ptr[i] = PyFloat_AsDouble(item);
         }
     }
@@ -68,8 +71,9 @@ static int PyArrayObject_init(PyArrayObject *self, PyObject *args,
     return 0;
 }
 
-static PyObject *PyArrayObject_display(PyArrayObject *self,
-                                       PyObject *Py_UNUSED(ignored)) {
+static PyObject *
+PyArrayObject_display(PyArrayObject *self, PyObject *Py_UNUSED(ignored))
+{
     int strides = self->strides[0];
     int dim = self->dimensions[0];
 
@@ -89,17 +93,19 @@ static PyObject *PyArrayObject_display(PyArrayObject *self,
 }
 
 static PyMethodDef PyArrayObject_methods[] = {
-    {"display", (PyCFunction)PyArrayObject_display, METH_NOARGS,
-     "Display the array stored in the raw data pointer"},
-    {NULL}};
+        {"display", (PyCFunction)PyArrayObject_display, METH_NOARGS,
+         "Display the array stored in the raw data pointer"},
+        {NULL}};
 
 PyTypeObject PyArrayObjectType = {
-    .ob_base = PyVarObject_HEAD_INIT(NULL, 0).tp_name = "numpy_like.ndarray",
-    .tp_basicsize = sizeof(PyArrayObject),
-    .tp_itemsize = 0,
-    .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
-    .tp_doc = PyDoc_STR("ndarray objects"),
-    .tp_new = PyType_GenericNew,
-    .tp_init = (initproc)PyArrayObject_init,
-    .tp_methods = PyArrayObject_methods,
+        .ob_base = PyVarObject_HEAD_INIT(NULL, 0).tp_name = "numpy_like.ndarray",
+        .tp_basicsize = sizeof(PyArrayObject),
+        .tp_itemsize = 0,
+        .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+        .tp_doc = PyDoc_STR("ndarray objects"),
+
+        // methods
+        .tp_new = PyType_GenericNew,
+        .tp_init = (initproc)PyArrayObject_init,
+        .tp_methods = PyArrayObject_methods,
 };

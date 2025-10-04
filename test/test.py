@@ -1,6 +1,6 @@
-import numpy_like
+import numpy_like as np_like
 
-a = numpy_like.ndarray([1.0, 2.0, 3.0], dtypes="float64")
+a = np_like.ndarray([1.0, 2.0, 3.0], dtypes=np_like.float32)
 
 a.display()
 

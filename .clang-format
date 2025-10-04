@@ -1,2 +1,16 @@
+BasedOnStyle: Google
+AlignAfterOpenBracket: Align
+AllowShortEnumsOnASingleLine: false
+AllowShortIfStatementsOnASingleLine: false
+AlwaysBreakAfterReturnType: TopLevel
+BreakBeforeBraces: Stroustrup
+ColumnLimit: 88
+ContinuationIndentWidth: 8
+DerivePointerAlignment: false
 IndentWidth: 4
-SortIncludes: true
+IncludeBlocks: Regroup
+PointerAlignment: Right
+ReflowComments: true
+SpacesInParentheses: false
+StatementMacros: [PyObject_HEAD, PyObject_VAR_HEAD, PyObject_HEAD_EXTRA]
+TabWidth: 4
