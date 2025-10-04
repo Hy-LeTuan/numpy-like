@@ -1,13 +1,25 @@
 #include <Python.h>
+#include <array_coercion.h>
 #include <ndarray_types.h>
 #include <string.h>
 
 static void
-init_set_meta_data(PyArrayObject *self, const char *dtypes, int array_length)
+init_set_meta_data(PyObject *obj, PyArrayObject *self, const char *dtypes,
+                   int array_length)
 {
     free(self->strides);
     free(self->nd);
     free(self->dimensions);
+
+    PyArray_Descr descr;
+    npy_intp out_shape[NPY_MAXDIMS];
+
+    npy_intp ndims = PyArray_DiscoverDTypeAndShape(obj, NPY_MAXDIMS, out_shape, &descr);
+
+    if (ndims < 0) {
+        // raise error
+        printf("Error, cannot calculate number of dimensions.\n");
+    }
 
     if (strcmp(dtypes, "float32") == 0) {
         self->strides = malloc(sizeof(int));
@@ -18,11 +30,14 @@ init_set_meta_data(PyArrayObject *self, const char *dtypes, int array_length)
         *self->strides = 8;
     }
 
-    self->nd = (int *)malloc(sizeof(int));
-    *(self->nd) = 1;
+    // set number of dimension
+    self->nd = (int *)&ndims;
 
-    self->dimensions = (int *)malloc(sizeof(int));
-    *(self->dimensions) = array_length;
+    // set shape
+    self->dimensions = (int *)malloc(sizeof(int) * ndims);
+    for (int i = 0; i < ndims; i++) {
+        self->dimensions[i] = out_shape[i];
+    }
 }
 
 static int
@@ -66,7 +81,7 @@ PyArrayObject_init(PyArrayObject *self, PyObject *args, PyObject *kwds)
     self->data = (char *)ptr;
 
     // set metadata
-    init_set_meta_data(self, dtypes, array_length);
+    init_set_meta_data(array, self, dtypes, array_length);
 
     return 0;
 }
@@ -92,9 +107,23 @@ PyArrayObject_display(PyArrayObject *self, PyObject *Py_UNUSED(ignored))
     Py_RETURN_NONE;
 }
 
+static PyObject *
+PyArrayObject_display_shape(PyArrayObject *self, PyObject *Py_UNUSED(ignored))
+{
+    int nd = *self->nd;
+
+    for (int i = 0; i < nd; ++i) {
+        printf("dimension %d has size: %d\n", i, (int)self->dimensions[i]);
+    }
+
+    Py_RETURN_NONE;
+}
+
 static PyMethodDef PyArrayObject_methods[] = {
         {"display", (PyCFunction)PyArrayObject_display, METH_NOARGS,
          "Display the array stored in the raw data pointer"},
+        {"display_shape", (PyCFunction)PyArrayObject_display_shape, METH_NOARGS,
+         "Display the dimension (shape) of the array."},
         {NULL}};
 
 PyTypeObject PyArrayObjectType = {

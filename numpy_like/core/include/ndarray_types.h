@@ -1,5 +1,5 @@
-#ifndef CORE_NDARRAY_OBJECTS_H_
-#define CORE_NDARRAY_OBJECTS_H_
+#ifndef CORE_NDARRAY_TYPES_H_
+#define CORE_NDARRAY_TYPES_H_
 
 #include <Python.h>
 
@@ -54,7 +54,10 @@ typedef struct _PyArray_Descr {
     PyObject_HEAD
 
     /*
-     * The type representation of this type that is exposed to Python
+     * The type object that poitns to PyArray_DTypeMeta (since this struct is a subclass
+     * of the PyTypeObject through the use of PyHeapTypeObject super). The
+     * PyArray_DTypeMeta struct has a slots field that is a pointer to the functions
+     * that this type suports.
      */
     PyTypeObject *typeobj;
 
@@ -74,7 +77,10 @@ typedef struct _PyArrayObject {
     PyObject_HEAD
     char *data;
     int *nd;
+
+    // the size in each dimension, also called shape
     int *dimensions;
+
     int *strides;
     PyArray_Descr *desc;
 } PyArrayObject;
