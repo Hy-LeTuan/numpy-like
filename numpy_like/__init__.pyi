@@ -1,7 +1,9 @@
 from typing_extensions import Any, Iterable
 
+
 class ndarray:
-    def __init__(self, array: Iterable[Any], dtypes: str) -> None:  # pyright: ignore[reportExplicitAny]
+    # pyright: ignore[reportExplicitAny]
+    def __init__(self, array: Iterable[Any], dtypes: str) -> None:
         pass
 
     def display(self) -> None:
@@ -9,6 +11,7 @@ class ndarray:
 
     def display_shape(self) -> None:
         pass
+
 
 int32 = "int32"
 float32 = "float32"
