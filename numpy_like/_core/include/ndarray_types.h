@@ -46,6 +46,20 @@ enum NPY_TYPECHAR {
     NPY_CLONGDOUBLELTR = 'G',
 };
 
+typedef struct {
+} DTYPE_SLOTS;
+
+typedef struct _PyArray_DTypeMeta {
+    PyObject_HEAD
+
+    // the same as the PyArrayDescr type_num
+    int type_num;
+
+    // slots to functions of this type
+    DTYPE_SLOTS *dt_slots;
+
+} PyArray_DTypeMeta;
+
 typedef struct _PyArray_Descr {
     PyObject_HEAD
 
@@ -55,7 +69,7 @@ typedef struct _PyArray_Descr {
      * PyArray_DTypeMeta struct has a slots field that is a pointer to the functions
      * that this type suports.
      */
-    PyTypeObject *typeobj;
+    PyArray_DTypeMeta *dtype_obj;
 
     // the single character name for this type in NPY_TYPECHAR
     char type;
@@ -83,5 +97,11 @@ typedef struct _PyArrayObject {
 } PyArrayObject;
 
 extern PyTypeObject PyArrayObjectType;
+
+// Macros
+
+#define NPY_NDIM(arr) *arr->nd
+#define NPY_DIM(arr) arr->dimensions
+#define NPY_ELSIZE(arr) arr->descr->elsize
 
 #endif

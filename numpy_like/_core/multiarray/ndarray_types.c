@@ -1,38 +1,27 @@
 #include <Python.h>
 #include <array_coercion.h>
 #include <ndarray_types.h>
-#include <string.h>
 
 #include "errors.h"
 
 static void
-init_set_meta_data(PyObject *obj, PyArrayObject *self, const char *dtypes,
-                   int array_length)
+PyArray_InitSetMetadata(PyArrayObject *self, PyObject *obj, const char *dtypes)
 {
     free(self->strides);
     free(self->nd);
     free(self->dimensions);
 
     PyArray_Descr *descr = NULL;
+    npy_intp ndims;
     npy_intp out_shape[NPY_MAXDIMS];
 
-    npy_intp ndims = PyArray_DiscoverDTypeAndShape(obj, NPY_MAXDIMS, out_shape, &descr);
+    ndims = PyArray_DiscoverDTypeAndShape(obj, NPY_MAXDIMS, out_shape, &descr);
 
     if (ndims < 0) {
-        // raise error
         printf(CUSTOM_ERROR_DIMENSION_NOT_VALID);
     }
     else if (ndims > NPY_MAXDIMS) {
         printf(CUSTOM_ERROR_DIMENSION_NOT_VALID);
-    }
-
-    if (strcmp(dtypes, "float32") == 0) {
-        self->strides = malloc(sizeof(int));
-        *self->strides = 4;
-    }
-    else if (!*dtypes || strcmp(dtypes, "float64") == 0) {
-        self->strides = malloc(sizeof(int));
-        *self->strides = 8;
     }
 
     // set number of dimension
@@ -40,57 +29,35 @@ init_set_meta_data(PyObject *obj, PyArrayObject *self, const char *dtypes,
     *self->nd = (int)ndims;
 
     // set shape
-    self->dimensions = (int *)malloc(sizeof(int) * ndims);
-    for (int i = 0; i < (int)ndims; i++) {
-        self->dimensions[i] = out_shape[i];
-    }
+    self->dimensions = (int *)out_shape;
 
     // set description
     self->descr = descr;
+
+    // set strides, naively assuming no sparse array
+    self->strides = malloc(sizeof(int) * ndims);
+    for (int i = 0; i < ndims; i++) {
+        self->strides[i] = self->descr->elsize;
+    }
 }
 
 static int
 PyArrayObject_init(PyArrayObject *self, PyObject *args, PyObject *kwds)
 {
-    PyObject *array;
-    int array_length;
-    double *ptr;
+    PyObject *obj;
 
     static char *keywords[] = {"array", "dtypes", NULL};
     const char *dtypes = "";
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O|s", keywords, &array, &dtypes)) {
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O|s", keywords, &obj, &dtypes)) {
         return -1;
     }
-
-    array_length = PyObject_Length(array);
-    if (array_length < 0) {
-        return -1;
-    }
-
-    ptr = (double *)malloc(sizeof(double) * array_length);
-
-    if (ptr == NULL)
-        return -1;
-
-    // populate buffer data
-    for (int i = 0; i < array_length; i++) {
-        PyObject *item;
-        item = PyList_GetItem(array, i);
-
-        if (!PyFloat_Check(item)) {
-            ptr[i] = 0.0;
-        }
-        else {
-            ptr[i] = PyFloat_AsDouble(item);
-        }
-    }
-
-    free(self->data);
-    self->data = (char *)ptr;
 
     // set metadata
-    init_set_meta_data(array, self, dtypes, array_length);
+    PyArray_InitSetMetadata(self, obj, dtypes);
+
+    // read buffer (read buffer is only called) after metadata is discovered
+    PyArray_ReadAndReturnRawBuffer(self, obj);
 
     return 0;
 }

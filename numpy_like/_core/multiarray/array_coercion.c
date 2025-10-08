@@ -1,7 +1,10 @@
+#include "array_coercion.h"
+
 #include <Python.h>
 #include <errors.h>
 #include <ndarray_types.h>
 
+#include "abstract.h"
 #include "boolobject.h"
 
 PyArray_Descr *
@@ -11,119 +14,119 @@ PyArray_CreatePyArrayDescr(enum NPY_TYPES type)
 
     switch (type) {
         case NPY_BOOL:
-            out->typeobj = NULL;
+            out->dtype_obj = NULL;
             out->type = '?';
             out->type_num = (int)NPY_BOOL;
             out->byteorder = 'B';
             out->elsize = 1;
             break;
         case NPY_BYTE:
-            out->typeobj = NULL;
+            out->dtype_obj = NULL;
             out->type = 'b';
             out->type_num = (int)NPY_BYTE;
             out->byteorder = 'B';
             out->elsize = 1;
             break;
         case NPY_UBYTE:
-            out->typeobj = NULL;
+            out->dtype_obj = NULL;
             out->type = 'B';
             out->type_num = (int)NPY_UBYTE;
             out->byteorder = 'B';
             out->elsize = 1;
             break;
         case NPY_SHORT:
-            out->typeobj = NULL;
+            out->dtype_obj = NULL;
             out->type = 'B';
             out->type_num = (int)NPY_SHORT;
             out->byteorder = 'h';
             out->elsize = 2;
             break;
         case NPY_USHORT:
-            out->typeobj = NULL;
+            out->dtype_obj = NULL;
             out->type = 'B';
             out->type_num = (int)NPY_USHORT;
             out->byteorder = 'H';
             out->elsize = 2;
             break;
         case NPY_INT:
-            out->typeobj = NULL;
+            out->dtype_obj = NULL;
             out->type = 'B';
             out->type_num = (int)NPY_USHORT;
             out->byteorder = 'i';
             out->elsize = 4;
             break;
         case NPY_UINT:
-            out->typeobj = NULL;
+            out->dtype_obj = NULL;
             out->type = 'B';
             out->type_num = (int)NPY_UINT;
             out->byteorder = 'I';
             out->elsize = 4;
             break;
         case NPY_LONG:
-            out->typeobj = NULL;
+            out->dtype_obj = NULL;
             out->type = 'B';
             out->type_num = (int)NPY_LONG;
             out->byteorder = 'l';
             out->elsize = 8;
             break;
         case NPY_ULONG:
-            out->typeobj = NULL;
+            out->dtype_obj = NULL;
             out->type = 'B';
             out->type_num = (int)NPY_ULONG;
             out->byteorder = 'L';
             out->elsize = 8;
             break;
         case NPY_LONGLONG:
-            out->typeobj = NULL;
+            out->dtype_obj = NULL;
             out->type = 'B';
             out->type_num = (int)NPY_LONGLONG;
             out->byteorder = 'q';
             out->elsize = 8;
             break;
         case NPY_ULONGLONG:
-            out->typeobj = NULL;
+            out->dtype_obj = NULL;
             out->type = 'B';
             out->type_num = (int)NPY_ULONGLONG;
             out->byteorder = 'Q';
             out->elsize = 8;
             break;
         case NPY_FLOAT:
-            out->typeobj = NULL;
+            out->dtype_obj = NULL;
             out->type = 'B';
             out->type_num = (int)NPY_FLOAT;
             out->byteorder = 'f';
             out->elsize = 4;
             break;
         case NPY_DOUBLE:
-            out->typeobj = NULL;
+            out->dtype_obj = NULL;
             out->type = 'B';
             out->type_num = (int)NPY_DOUBLE;
             out->byteorder = 'd';
             out->elsize = 8;
             break;
         case NPY_LONGDOUBLE:
-            out->typeobj = NULL;
+            out->dtype_obj = NULL;
             out->type = 'B';
             out->type_num = (int)NPY_LONGDOUBLE;
             out->byteorder = 'g';
             out->elsize = 16;
             break;
         case NPY_CFLOAT:
-            out->typeobj = NULL;
+            out->dtype_obj = NULL;
             out->type = 'B';
             out->type_num = (int)NPY_CFLOAT;
             out->byteorder = 'F';
             out->elsize = 4;
             break;
         case NPY_CDOUBLE:
-            out->typeobj = NULL;
+            out->dtype_obj = NULL;
             out->type = 'B';
             out->type_num = (int)NPY_CDOUBLE;
             out->byteorder = 'D';
             out->elsize = 8;
             break;
         case NPY_CLONGDOUBLE:
-            out->typeobj = NULL;
+            out->dtype_obj = NULL;
             out->type = 'B';
             out->type_num = (int)NPY_CLONGDOUBLE;
             out->byteorder = 'G';
@@ -260,4 +263,110 @@ PyArray_DiscoverDTypeAndShape(PyObject *obj, int max_dims,
 
     return PyArray_DiscoverDTYpeAndShapeRecursive(obj, max_dims, 1, out_shape,
                                                   out_descr);
+}
+
+/**
+ * The function to parse the raw PyObject scalar value into the approrpiate type, then
+ * use type conversion to assign it back into the buffer.
+ * **/
+void
+PyArray_ParseAndAssignElementToBuffer(PyArrayObject *self, PyObject *item, void *buffer,
+                                      int index)
+{
+}
+
+/**
+ * This function computes the flattened array index (index into the raw data buffer) for
+ * any given multi-dimensional index through the use of the ndarray's metadata.
+ * @returns Returns the flattened index from the dimensional index and the dimensions of
+ * the current ndarray if succeed, 0 otherwise.
+ * **/
+int
+PyArray_ComputeFlattenedIndex(int *index, int *dimensions, int nd)
+{
+    int flattened_index = 0;
+
+    for (int i = 0; i < nd; i++) {
+        flattened_index += index[i] * dimensions[i];
+    }
+
+    return flattened_index;
+}
+
+/**
+ * @returns Returns -1 if errors occured when writing data to buffer, and 0 otherwise.
+ * **/
+int
+PyArray_ReadAndReturnRawBuffferRecursive(void *buffer, PyArrayObject *self,
+                                         PyObject *obj, int *index, int level)
+{
+    PyObject *object;
+    object = PySequence_Fast(obj, CUSTOM_ERROR_NOT_A_SEQUENCE);
+
+    if (level == NPY_NDIM(self)) {
+        for (int i = 0; i < NPY_DIM(self)[level - 1]; i++) {
+            PyObject *item;
+            item = PySequence_Fast_GET_ITEM(object, i);
+
+            index[level - 1] = i;
+            int flattened_index =
+                    PyArray_ComputeFlattenedIndex(index, self->dimensions, *self->nd);
+
+            PyArray_ParseAndAssignElementToBuffer(self, item, buffer, flattened_index);
+        }
+    }
+    else {
+        for (int i = 0; i < self->dimensions[level - 1]; i++) {
+            index[level - 1] = i;
+            PyObject *item;
+            item = PySequence_Fast_GET_ITEM(object, i);
+
+            PyArray_ReadAndReturnRawBuffferRecursive(buffer, self, item, index,
+                                                     level + 1);
+        }
+    }
+
+    return 0;
+}
+
+void *
+PyArray_ReadAndReturnRawBuffer(PyArrayObject *self, PyObject *obj)
+{
+    int ndims = NPY_NDIM(self);
+    long long num_elem = 0;
+
+    void *buffer;
+    int *index;
+
+    for (int i = 0; i < ndims; i++) {
+        num_elem += NPY_DIM(self)[i];
+    }
+
+    buffer = malloc(NPY_ELSIZE(self) * num_elem);
+    index = malloc(sizeof(int) * ndims);
+
+    PyArray_ReadAndReturnRawBuffferRecursive(buffer, self, obj, index, 1);
+
+    return buffer;
+}
+
+int
+PyArray_HandleDataBuffer(PyArrayObject *self, PyObject *obj)
+{
+    if (!PySequence_Check(obj)) {
+        printf(CUSTOM_ERROR_NOT_A_SEQUENCE);
+        return -1;
+    }
+
+    if (self->data != NULL) {
+        printf(CUSTOM_WARNING_OVERRIDING_CURRENT_DATA);
+    }
+
+    free(self->data);
+
+    void *buff = PyArray_ReadAndReturnRawBuffer(self, obj);
+
+    self->data = (char *)buff;
+
+    return 0;
 }
