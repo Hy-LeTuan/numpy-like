@@ -9,4 +9,7 @@
     "Shape Error: Shape mismatch, children sharing the same level must have the same " \
     "size."
 
+#define CUSTOM_ERROR_DIMENSION_NOT_VALID \
+    "Dimension Error: Cannot determine the dimension of the array."
+
 #endif

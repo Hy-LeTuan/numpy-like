@@ -24,8 +24,6 @@ enum NPY_TYPES {
     NPY_CFLOAT = 14,
     NPY_CDOUBLE = 15,
     NPY_CLONGDOUBLE = 16,
-    NPY_OBJECT = 17,
-    NPY_STRING = 18,
 };
 
 enum NPY_TYPECHAR {
@@ -46,8 +44,6 @@ enum NPY_TYPECHAR {
     NPY_CFLOATLTR = 'F',
     NPY_CDOUBLELTR = 'D',
     NPY_CLONGDOUBLELTR = 'G',
-    NPY_OBJECTLTR = 'O',
-    NPY_STRINGLTR = 'S',
 };
 
 typedef struct _PyArray_Descr {
@@ -67,9 +63,10 @@ typedef struct _PyArray_Descr {
     // the integer representation for this type in NPY_TYPES
     int type_num;
 
+    // big or little endian format
     char byteorder;
 
-    // element size (itemsize) for this type
+    // element size (number of bytes) for this type
     npy_intp elsize;
 } PyArray_Descr;
 
@@ -82,7 +79,7 @@ typedef struct _PyArrayObject {
     int *dimensions;
 
     int *strides;
-    PyArray_Descr *desc;
+    PyArray_Descr *descr;
 } PyArrayObject;
 
 extern PyTypeObject PyArrayObjectType;

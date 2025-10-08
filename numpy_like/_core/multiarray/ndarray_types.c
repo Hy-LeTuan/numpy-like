@@ -3,6 +3,8 @@
 #include <ndarray_types.h>
 #include <string.h>
 
+#include "errors.h"
+
 static void
 init_set_meta_data(PyObject *obj, PyArrayObject *self, const char *dtypes,
                    int array_length)
@@ -11,14 +13,17 @@ init_set_meta_data(PyObject *obj, PyArrayObject *self, const char *dtypes,
     free(self->nd);
     free(self->dimensions);
 
-    PyArray_Descr descr;
+    PyArray_Descr *descr = NULL;
     npy_intp out_shape[NPY_MAXDIMS];
 
     npy_intp ndims = PyArray_DiscoverDTypeAndShape(obj, NPY_MAXDIMS, out_shape, &descr);
 
     if (ndims < 0) {
         // raise error
-        printf("Error, cannot calculate number of dimensions.\n");
+        printf(CUSTOM_ERROR_DIMENSION_NOT_VALID);
+    }
+    else if (ndims > NPY_MAXDIMS) {
+        printf(CUSTOM_ERROR_DIMENSION_NOT_VALID);
     }
 
     if (strcmp(dtypes, "float32") == 0) {
@@ -31,13 +36,17 @@ init_set_meta_data(PyObject *obj, PyArrayObject *self, const char *dtypes,
     }
 
     // set number of dimension
-    self->nd = (int *)&ndims;
+    self->nd = malloc(sizeof(int));
+    *self->nd = (int)ndims;
 
     // set shape
     self->dimensions = (int *)malloc(sizeof(int) * ndims);
-    for (int i = 0; i < ndims; i++) {
+    for (int i = 0; i < (int)ndims; i++) {
         self->dimensions[i] = out_shape[i];
     }
+
+    // set description
+    self->descr = descr;
 }
 
 static int
@@ -110,7 +119,7 @@ PyArrayObject_display(PyArrayObject *self, PyObject *Py_UNUSED(ignored))
 static PyObject *
 PyArrayObject_display_shape(PyArrayObject *self, PyObject *Py_UNUSED(ignored))
 {
-    int nd = *self->nd;
+    int nd = (int)*self->nd;
 
     for (int i = 0; i < nd; ++i) {
         printf("dimension %d has size: %d\n", i, (int)self->dimensions[i]);
