@@ -69,7 +69,7 @@ typedef struct _PyArray_Descr {
      * PyArray_DTypeMeta struct has a slots field that is a pointer to the functions
      * that this type suports.
      */
-    PyArray_DTypeMeta *dtype_obj;
+    PyTypeObject *dtype_obj;
 
     // the single character name for this type in NPY_TYPECHAR
     char type;
@@ -92,7 +92,10 @@ typedef struct _PyArrayObject {
     // the size in each dimension, also called shape
     int *dimensions;
 
+    // the amount of byte needed to move to the next element in each dimension
     int *strides;
+
+    // the type descriptor for the current ndarray
     PyArray_Descr *descr;
 } PyArrayObject;
 
@@ -102,6 +105,9 @@ extern PyTypeObject PyArrayObjectType;
 
 #define NPY_NDIM(arr) *arr->nd
 #define NPY_DIM(arr) arr->dimensions
-#define NPY_ELSIZE(arr) arr->descr->elsize
+#define NPY_STRIDES(arr) arr->strides
+#define NPY_DESCR(arr) arr->descr
+#define NPY_ELSIZE(arr) NPY_DESCR(arr)->elsize
+#define NPY_DATA(arr) arr->data
 
 #endif

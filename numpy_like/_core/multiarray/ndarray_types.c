@@ -29,7 +29,10 @@ PyArray_InitSetMetadata(PyArrayObject *self, PyObject *obj, const char *dtypes)
     *self->nd = (int)ndims;
 
     // set shape
-    self->dimensions = (int *)out_shape;
+    self->dimensions = malloc(sizeof(int) * ndims);
+    for (int i = 0; i < ndims; i++) {
+        self->dimensions[i] = (int)out_shape[i];
+    }
 
     // set description
     self->descr = descr;
@@ -57,30 +60,9 @@ PyArrayObject_init(PyArrayObject *self, PyObject *args, PyObject *kwds)
     PyArray_InitSetMetadata(self, obj, dtypes);
 
     // read buffer (read buffer is only called) after metadata is discovered
-    PyArray_ReadAndReturnRawBuffer(self, obj);
+    PyArray_HandleDataBuffer(self, obj);
 
     return 0;
-}
-
-static PyObject *
-PyArrayObject_display(PyArrayObject *self, PyObject *Py_UNUSED(ignored))
-{
-    int strides = self->strides[0];
-    int dim = self->dimensions[0];
-
-    for (int i = 0; i < strides * dim; i += strides) {
-        char *num = malloc(strides);
-
-        for (int j = 0; j < strides; j++) {
-            num[j] = self->data[i + j];
-        }
-
-        // only the final cast is needed
-        double *x = (double *)num;
-        printf("the number x is: %f\n", *x);
-    }
-
-    Py_RETURN_NONE;
 }
 
 static PyObject *
@@ -95,11 +77,64 @@ PyArrayObject_display_shape(PyArrayObject *self, PyObject *Py_UNUSED(ignored))
     Py_RETURN_NONE;
 }
 
+static PyObject *
+PyArrayObject_display_data(PyArrayObject *self, PyObject *Py_UNUSED(ignored))
+{
+    long long num_elem = 1;
+
+    for (int i = 0; i < NPY_NDIM(self); i++) {
+        num_elem *= NPY_DIM(self)[i];
+    }
+
+    int counter = 0;
+    for (npy_intp i = 0; i < num_elem * NPY_ELSIZE(self); i += NPY_ELSIZE(self)) {
+        char *ptr = malloc(NPY_ELSIZE(self));
+
+        for (npy_intp j = 0; j < NPY_ELSIZE(self); j++) {
+            ptr[j] = self->data[i + j];
+        }
+
+        float f = *((float *)ptr);
+        printf("element at index: %d is: %f\n", counter, f);
+
+        counter++;
+    }
+
+    Py_RETURN_NONE;
+}
+
+static PyObject *
+PyArrayObject_getattr(PyArrayObject *obj, PyObject *attr)
+{
+    const char *name = PyUnicode_AsUTF8(attr);
+    PyObject *out;
+
+    if (name == NULL) {
+        return NULL;
+    }
+
+    if (strcmp(name, "nd") == 0) {
+        out = PyLong_FromLong((long)*obj->nd);
+        return out;
+    }
+    else if (strcmp(name, "dimensions") == 0) {
+        out = PyTuple_New((npy_intp)NPY_NDIM(obj));
+
+        for (npy_intp i = 0; i < (npy_intp)NPY_NDIM(obj); i++) {
+            PyTuple_SET_ITEM(out, i, PyLong_FromLong((long)NPY_DIM(obj)[i]));
+        }
+
+        return out;
+    }
+
+    return PyObject_GenericGetAttr((PyObject *)obj, attr);
+}
+
 static PyMethodDef PyArrayObject_methods[] = {
-        {"display", (PyCFunction)PyArrayObject_display, METH_NOARGS,
-         "Display the array stored in the raw data pointer"},
         {"display_shape", (PyCFunction)PyArrayObject_display_shape, METH_NOARGS,
          "Display the dimension (shape) of the array."},
+        {"display_data", (PyCFunction)PyArrayObject_display_data, METH_NOARGS,
+         "Display the data in the raw buffer of the array."},
         {NULL}};
 
 PyTypeObject PyArrayObjectType = {
@@ -112,5 +147,6 @@ PyTypeObject PyArrayObjectType = {
         // methods
         .tp_new = PyType_GenericNew,
         .tp_init = (initproc)PyArrayObject_init,
+        .tp_getattro = (getattrofunc)PyArrayObject_getattr,
         .tp_methods = PyArrayObject_methods,
 };
